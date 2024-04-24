@@ -10,33 +10,17 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 
+
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
-COMPUTERS_URL = urljoin(HOME_URL, "computers/")
-LAPTOPS_URL = urljoin(COMPUTERS_URL, "laptops")
-TABLETS_URL = urljoin(COMPUTERS_URL, "tablets")
-PHONES_URL = urljoin(HOME_URL, "phones/")
-TOUCH_URL = urljoin(PHONES_URL, "touch")
 SOURCES = {
     "home.csv": HOME_URL,
-    "computers.csv": COMPUTERS_URL,
-    "laptops.csv": LAPTOPS_URL,
-    "tablets.csv": TABLETS_URL,
-    "phones.csv": PHONES_URL,
-    "touch.csv": TOUCH_URL
+    "computers.csv": urljoin(HOME_URL, "computers/"),
+    "laptops.csv": urljoin(HOME_URL, "computers/laptops"),
+    "tablets.csv": urljoin(HOME_URL, "computers/tablets"),
+    "phones.csv": urljoin(HOME_URL, "phones/"),
+    "touch.csv": urljoin(HOME_URL, "phones/touch")
 }
-
-_driver: WebDriver | None = None
-
-
-def get_driver() -> WebDriver:
-    return _driver
-
-
-def set_driver(new_driver: WebDriver) -> None:
-    global _driver
-    _driver = new_driver
-
 
 logging.basicConfig(
     level=logging.INFO,
@@ -94,8 +78,7 @@ def get_single_page_product(page_products: list) -> list[Product]:
     ]
 
 
-def get_category_products(url: str) -> list[Product]:
-    driver = get_driver()
+def get_category_products(url: str, driver: WebDriver) -> list[Product]:
     driver.get(url)
 
     try:
@@ -120,11 +103,11 @@ def get_category_products(url: str) -> list[Product]:
     return all_products
 
 
-def parse_all_categories(sources: dict[str, str]) -> dict[str, list[Product]]:
+def parse_all_categories(sources: dict[str, str], driver: WebDriver) -> dict[str, list[Product]]:
     products_to_save = sources
     for file_path, page_url in sources.items():
         logging.info(f"Start parsing {file_path[:-4]}")
-        products = get_category_products(page_url)
+        products = get_category_products(page_url, driver)
         products_to_save[file_path] = products
 
     return products_to_save
@@ -141,8 +124,7 @@ def save_products_to_csv(products: dict[str, list[Product]]) -> None:
 
 def get_all_products() -> None:
     with webdriver.Chrome() as driver:
-        set_driver(driver)
-        products = parse_all_categories(SOURCES)
+        products = parse_all_categories(SOURCES, driver)
         save_products_to_csv(products)
 
 
